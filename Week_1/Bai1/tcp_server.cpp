@@ -19,19 +19,31 @@ int main(int argc, char *argv[])
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(stoi(argv[1]));
 
-    bind(server, (struct sockaddr *)&addr, sizeof(addr));
-    listen(server, 5);
+    if (bind(server, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
+        cout << "Bind failed!";
+        return 0;
+    };
+    if (listen(server, 5) == -1)
+    {
+        cout << "listen failed!";
+        return 0;
+    };
 
     struct sockaddr_in clientAddr;
     int clientAddrLen = sizeof(clientAddr);
     int client = accept(server, (struct sockaddr *)&clientAddr, (unsigned int *)&clientAddrLen);
-
+    if (client == -1)
+    {
+        cout << "accept failed!";
+        return 0;
+    }
     // send hello client
     fstream file;
     file.open(argv[2], ios::in);
     if (!file.is_open())
     {
-        cout << "Open file failed!\n";
+        cout << "Open hello file failed!\n";
         return 0;
     }
     string line;
@@ -42,10 +54,10 @@ int main(int argc, char *argv[])
 
     // get mes from client and write to file
     ofstream out;
-
+    out.open(argv[3], ios::app);
     if (!out.is_open())
     {
-        cout << "Open file failed!\n";
+        cout << "Open write file failed!\n";
         return 0;
     }
 

@@ -40,13 +40,24 @@ int main(int argc, char *argv[])
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(stoi(argv[1]));
 
-    bind(server, (struct sockaddr *)&addr, sizeof(addr));
-    listen(server, 5);
+    if (bind(server, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
+        cout << "Bind failed!\n";
+        return 0;
+    };
+    if (listen(server, 5) == -1)
+    {
+        cout << "listen failed!!";
+        return 0;
+    };
 
     struct sockaddr_in clientAddr;
     int clientAddrLen = sizeof(clientAddr);
     int client = accept(server, (struct sockaddr *)&clientAddr, (unsigned int *)&clientAddrLen);
-
+    if (client == -1)
+    {
+        cout << "Accept failed!";
+    }
     const char *mes = "Hello client! \n";
     send(client, mes, strlen(mes), 0);
 
@@ -96,7 +107,7 @@ int main(int argc, char *argv[])
         cout << "Họ và tên : " << sv.name << endl;
         cout << "Mã số sinh viên : " << sv.MSSV << endl;
         cout << "Ngày sinh : " << sv.NgaySinh.day << " - " << sv.NgaySinh.month << " - " << sv.NgaySinh.year << endl;
-        cout << "Điểm : " << sv.Diem << endl;
+        cout << "Điểm : " << setprecision(2) << fixed << sv.Diem << endl;
         cout << "--------------------------------\n";
 
         // in vào file
@@ -157,7 +168,7 @@ int main(int argc, char *argv[])
             day_sv = "0" + day_sv;
         }
 
-        out << inet_ntoa(clientAddr.sin_addr) << " " << 1900 + tm_local->tm_year << "-" << month << "-" << day << " " << hour << ":" << minute << ":" << second << " " << sv.MSSV << " " << sv.name << " " << sv.NgaySinh.year << "-" << month_sv << "-" << day_sv << " " << sv.Diem << endl;
+        out << inet_ntoa(clientAddr.sin_addr) << " " << 1900 + tm_local->tm_year << "-" << month << "-" << day << " " << hour << ":" << minute << ":" << second << " " << sv.MSSV << " " << sv.name << " " << sv.NgaySinh.year << "-" << month_sv << "-" << day_sv << " " << setprecision(2) << fixed << sv.Diem << endl;
     }
 
     close(client);

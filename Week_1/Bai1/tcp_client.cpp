@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     if (res == -1)
     {
         cout << "Falied to connect!\n";
-        return (1);
+        return 0;
     }
 
     // get hello from server
