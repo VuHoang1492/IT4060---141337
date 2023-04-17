@@ -8,7 +8,7 @@ using namespace std;
 struct SSD
 {
     char name;
-    char DungLuong[10];
+    int size;
 };
 
 struct Computer
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     // get hello from server
     char mes[256];
-    int ret = recv(info_client, mes, sizeof(mes), 0);
+    recv(info_client, mes, sizeof(mes), 0);
     cout << mes << endl;
 
     // input data to server
@@ -60,31 +60,50 @@ int main(int argc, char *argv[])
         else
         {
             SSD s;
-            cin.ignore();
             cout << "Nhập tên ổ: \n";
+            cin.ignore();
             s.name = getchar();
             cout << "Nhập dung lượng: \n";
             cin.ignore();
-            cin.getline(s.DungLuong, 10);
+            cin >> s.size;
             com.ds.push_back(s);
         }
     }
-    cout << com.name << endl;
-    cout << com.ds.size() << endl;
-    for (SSD s : com.ds)
-    {
-        cout << s.name << "-" << s.DungLuong << endl;
-    }
 
     size_t namelen = strlen(com.name);
-    size_t dslen = 0;
+
+    size_t total = sizeof(size_t) + namelen + sizeof(int) + sizeof(char) * com.ds.size() + sizeof(int) * com.ds.size();
+
+    char *data = new char[total];
+
+    char *p = data;
+
+    memcpy(p, &namelen, sizeof(size_t));
+    p += sizeof(size_t);
+
+    memcpy(p, &com.name, namelen);
+    p += namelen;
+
+    int size_ds = com.ds.size();
+    memcpy(p, &size_ds, sizeof(int));
+    p += sizeof(int);
+
     for (SSD s : com.ds)
     {
-        string data(1, s.name);
-        data += "-" + s.DungLuong;
-        size_t datalen = 
-        dslen += strlen(data.c_str());
+        memcpy(p, &s.name, sizeof(char));
+        p += sizeof(char);
+
+        memcpy(p, &s.size, sizeof(int));
+        p += sizeof(int);
     }
+
+    int ret = send(info_client, data, total, 0);
+    if (ret <= 0)
+    {
+        return 0;
+    }
+
+    delete[] data;
 
     close(info_client);
 }
