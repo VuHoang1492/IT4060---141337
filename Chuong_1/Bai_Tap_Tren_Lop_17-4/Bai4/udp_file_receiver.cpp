@@ -22,23 +22,23 @@ int main(int argc, char *argv[])
     }
 
     char buf[1024];
-    char name[100];
-    int name_len = recvfrom(receiver, name, sizeof(name), 0, NULL, NULL);
-    name[name_len] = '\0';
-
-    string s = "receive-";
-    s += name;
-
     fstream file;
-
     while (true)
     {
+
+        char id[20];
+        int id_len = recvfrom(receiver, id, sizeof(id), 0, NULL, NULL);
+        id[id_len] = '\0';
+
         int ret = recvfrom(receiver, buf, sizeof(buf), 0, NULL, NULL);
         if (ret <= 0)
         {
             break;
         }
         buf[ret] = '\0';
+        string s_id = id;
+        string s = s_id + "-receive.txt";
+
         file.open(s, ios::app);
         if (!file.is_open())
         {

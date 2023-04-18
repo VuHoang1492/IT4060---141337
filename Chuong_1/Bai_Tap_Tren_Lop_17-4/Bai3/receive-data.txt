@@ -2,4 +2,8 @@ Hello
 Thanh you
 good bye
 123456789
-
+data.txt
+Hello
+Thanh you
+good bye
+123456789
