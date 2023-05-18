@@ -162,7 +162,7 @@ int main()
                 }
                 else
                 {
-                    send(loggedClients[i], formatCommandErr, strlen(formatCommandErr), 0);
+                    send(loggedClients[i], smtErr, strlen(smtErr), 0);
                 }
             }
         }
