@@ -52,6 +52,7 @@ int main()
     const char *formatCommandErr = "Format command error (format: command > filename):\n";
     const char *fileNameErr = "FileName error:\n";
     const char *successed = "Succesful!! This is your result:";
+    const char *smtErr = "Have somethings was wrong. Try again!!\n";
     const char *hr = "\n--------------------------------------------------\n";
 
     while (true)
@@ -149,6 +150,7 @@ int main()
                     if (!file.is_open())
                     {
                         cout << "Open file failed!\n";
+                        send(loggedClients[i], smtErr, strlen(smtErr), 0);
                         continue;
                     }
                     while (file.getline(line, 2048))
@@ -205,6 +207,7 @@ int main()
                 if (!file.is_open())
                 {
                     cout << "Open file failed!\n";
+                    send(loggedClients[i], smtErr, strlen(smtErr), 0);
                     continue;
                 }
                 while (file.getline(line, 64))
