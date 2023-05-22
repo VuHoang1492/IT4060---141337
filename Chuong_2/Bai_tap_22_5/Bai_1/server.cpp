@@ -5,11 +5,68 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
+#include <string.h>
 using namespace std;
+
+char *formatText(char *src, char *des)
+{
+    int length = strlen(src);
+    des = new char[length];
+    int j = 0;
+    for (int i = 0; i < length; i++)
+    {
+
+        // ki tu dau tien
+        if (i == 0 && src[i] == ' ')
+        {
+            continue;
+        }
+        if (i == 0 && src[i] != ' ')
+        {
+            des[j] = toupper(src[i]);
+            j++;
+            continue;
+        }
+
+        // ki tu tiep theo
+        if (src[i] != ' ' && src[i - 1] == ' ')
+        {
+            des[j] = toupper(src[i]);
+            j++;
+            continue;
+        }
+        if (src[i] != ' ' && src[i - 1] != ' ')
+        {
+            des[j] = tolower(src[i]);
+            j++;
+            continue;
+        }
+
+        // kiem tra khoang trang
+        if (src[i] == ' ' && src[i - 1] != ' ')
+        {
+            des[j] = ' ';
+            j++;
+            continue;
+        }
+        if (src[i] == ' ' && src[i - 1] == ' ')
+        {
+            continue;
+        }
+
+        // Ki tu cuoi cung
+        if (i == length - 1)
+        {
+            des[j] = '\0';
+            continue;
+        }
+    }
+    return des;
+}
 
 int main()
 {
+
     int listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listener == -1)
     {
@@ -61,11 +118,11 @@ int main()
         if (FD_ISSET(listener, &fdread))
         {
             int client = accept(listener, NULL, NULL);
-clients.push_back(client);
-            char* numclient = itoa(clients.size());
-            send(client, );
-                
-
+            clients.push_back(client);
+            string numclient = to_string(clients.size());
+            string mes = "Xin chao. Hien co " + numclient + " dang ket noi \n";
+            send(client, mes.c_str(), strlen(mes.c_str()), 0);
+            cout << client << " ket noi!\n";
             continue;
         }
         for (int i = 0; i <= clients.size(); i++)
@@ -80,13 +137,17 @@ clients.push_back(client);
                 }
                 else
                 {
-                    buf[ret - 1] = '\0';
-                    if (strcmp(buf, "exit") != 0)
+                    buf[ret] = '\0';
+                    if (strcmp(buf, "exit\n") != 0)
                     {
-                        cout << buf << endl;
+                        char *des;
+                        des = formatText(buf, des);
+                        send(clients[i], des, strlen(des), 0);
+                        delete[] des;
                     }
                     else
                     {
+                        cout << clients[i] << " ngat ket noi!\n";
                         clients.erase(clients.begin() + i);
                         break;
                     }
