@@ -165,13 +165,16 @@ int main()
             cout << "Time out \n";
             continue;
         }
+        struct sockaddr_in clientAddr;
+        int clientAddrLen = sizeof(clientAddr);
 
         for (int i = 0; i < nfds; i++)
         {
             if (pollArr[i].fd == listener && pollArr[i].revents & POLLIN)
             {
 
-                int client = accept(listener, NULL, NULL);
+                int client = accept(listener, (struct sockaddr *)&clientAddr, (unsigned int *)&clientAddrLen);
+                cout << inet_ntoa(clientAddr.sin_addr) << endl;
                 send(client, nameReq, strlen(nameReq), 0);
                 queueClients.push_back(client);
             }
