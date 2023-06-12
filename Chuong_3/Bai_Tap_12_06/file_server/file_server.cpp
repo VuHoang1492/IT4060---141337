@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <wait.h>
+#include <dirent.h>
 
 using namespace std;
 
@@ -20,6 +21,7 @@ void signalHandler(int signo)
 
 int main()
 {
+
     int listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listener == -1)
     {
@@ -44,6 +46,8 @@ int main()
         return 1;
     }
 
+    const char *noFile = "ERROR No files to download\r\n";
+
     signal(SIGCHLD, signalHandler);
     while (true)
     {
@@ -52,7 +56,51 @@ int main()
         cout << "New connect: " << client << endl;
         if (fork() == 0)
         {
+            close(listener);
+
+            DIR *dir;
+            struct dirent *entry;
+            int count = 0; // số lượng file
+            vector<char *> file_names;
+            dir = opendir(".");
+            if (dir == NULL)
+            {
+                perror("opendir");
+                return 1;
+            }
+
+            while ((entry = readdir(dir)) != NULL)
+            {
+                if (entry->d_type == DT_REG)
+                {
+                    count++;
+                    file_names.push_back(entry->d_name);
+                }
+            }
+            closedir(dir);
+
+            cout << count << endl;
+            if (count == 0)
+            {
+                send(client, noFile, strlen(noFile), 0);
+                close(client);
+                exit(0);
+            }
+            else
+            {
+                string s = "OK " + to_string(count);
+                for (char *fileName : file_names)
+                {
+                    s += "\r\n";
+                    s += fileName;
+                }
+                s += "\r\n\r\n";
+                cout << s << endl;
+            }
+
+            closedir(dir);
         }
+        close(client);
     }
 
     close(listener);
