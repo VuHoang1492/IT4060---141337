@@ -47,11 +47,13 @@ int main()
     }
 
     const char *noFile = "ERROR No files to download\r\n";
+    const char *req = "\nInput file name:\n";
+    const char *smtErr = "Cannot open file.\n";
 
     signal(SIGCHLD, signalHandler);
     while (true)
     {
-        cout << "Waiting clien connect....\n";
+        cout << "Waiting client connect....\n";
         int client = accept(listener, NULL, NULL);
         cout << "New connect: " << client << endl;
         if (fork() == 0)
@@ -66,7 +68,8 @@ int main()
             if (dir == NULL)
             {
                 perror("opendir");
-                return 1;
+                close(client);
+                exit(0);
             }
 
             while ((entry = readdir(dir)) != NULL)
@@ -79,7 +82,6 @@ int main()
             }
             closedir(dir);
 
-            cout << count << endl;
             if (count == 0)
             {
                 send(client, noFile, strlen(noFile), 0);
@@ -88,17 +90,50 @@ int main()
             }
             else
             {
-                string s = "OK " + to_string(count);
-                for (char *fileName : file_names)
+                string s = "OK " + to_string(count) + "\r\n";
+                send(client, s.c_str(), strlen(s.c_str()), 0);
+                string list_file;
+                for (auto name : file_names)
                 {
-                    s += "\r\n";
-                    s += fileName;
+                    cout << name << endl;
+                    list_file += name;
+                    list_file += "\r\n";
                 }
-                s += "\r\n\r\n";
-                cout << s << endl;
-            }
+                list_file += "\r\n";
+                send(client, list_file.c_str(), strlen(list_file.c_str()), 0);
 
-            closedir(dir);
+                char buf[256];
+                while (true)
+                {
+                    send(client, req, strlen(req), 0);
+                    int ret = recv(client, buf, sizeof(buf), 0);
+
+                    if (ret <= 0)
+                    {
+                        close(client);
+                        exit(0);
+                    }
+                    buf[ret - 1] = '\0';
+                    cout << buf << endl;
+
+                    fstream file;
+                    char line[2048];
+                    file.open(buf, ios::in);
+                    if (!file.is_open())
+                    {
+                        cout << "Open file failed!\n";
+                        send(client, smtErr, strlen(smtErr), 0);
+                        continue;
+                    }
+                    while (file.getline(line, 2048))
+                    {
+                        send(client, line, strlen(line), 0);
+                    }
+                    file.close();
+                }
+            }
+            // close(client);
+            // exit(0);
         }
         close(client);
     }
