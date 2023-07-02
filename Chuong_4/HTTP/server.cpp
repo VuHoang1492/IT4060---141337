@@ -10,6 +10,8 @@
 #include <sys/wait.h>
 #include <dirent.h>
 
+#include <sys/stat.h>
+
 using namespace std;
 
 void *client_thread(void *);
@@ -68,45 +70,129 @@ int main()
     return 0;
 }
 
+bool isImageFile(const char *filename)
+{
+    const char *extension = strrchr(filename, '.');
+
+    if (extension != NULL)
+    {
+        if (strcmp(extension, ".jpg") == 0 || strcmp(extension, ".jpeg") == 0 ||
+            strcmp(extension, ".png") == 0 || strcmp(extension, ".gif") == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void *client_thread(void *param)
 {
     int client = *(int *)param;
+    char buf[2048];
 
-    DIR *dir;
-    struct dirent *entry;
-    dir = opendir(".");
-    if (dir == NULL)
-    {
-        perror("opendir");
-        close(client);
+    int len = recv(client, buf, sizeof(buf) - 1, 0);
+
+    buf[len] = 0;
+    char *method = strtok(buf, " ");
+    char *path = strtok(NULL, " ");
+
+    if (path == NULL)
         return NULL;
-    }
-    string p = "<div>";
-    while ((entry = readdir(dir)) != NULL)
-    {
-        p += "<a href ='http://localhost:9000/";
-        p += entry->d_name;
-        p += "'> <h4>";
-        p += entry->d_name;
-        p += "</h4></a>\n ";
-    }
-    closedir(dir);
 
-    p += "</div>";
+    printf("Method: %s\n", method);
+    printf("Path: %s\n", path);
+    char src[100] = "/mnt/e/workspaces/C_C++/C_Ubuntu/LTM/Chuong_4/HTTP";
+    strcat(src, path);
 
     string data = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body>";
-    data += p;
-    data += "</ body></ html> ";
-    send(client, data.c_str(), strlen(data.c_str()), 0);
-    char buf[1024];
-    while (true)
+
+    struct stat st;
+    if (stat(src, &st) == 0)
     {
-        int n = recv(client, buf, sizeof(buf), 0);
-        if (n == 0)
+        if (S_ISREG(st.st_mode))
         {
-            break;
+            printf("%s is a regular file.\n", path);
+
+            if (isImageFile(path))
+            {
+                data += "<img src=\"";
+                data += path;
+
+                data += "\" style=\"width: 500px; height: auto; border: 1px solid black;\"";
+                data += "alt='";
+                data += path;
+                data += "'";
+                data += ">";
+            }
+            else
+            {
+                data += "<p>";
+                FILE *fp = fopen(src, "rb");
+
+                while (true)
+                {
+                    int ret = fread(buf, 1, sizeof(buf), fp);
+                    if (ret <= 0)
+                        break;
+                    data += buf;
+                }
+                fclose(fp);
+                data += "</p>";
+            }
         }
-        cout << buf << endl;
+        else if (S_ISDIR(st.st_mode))
+        {
+            printf("%s is a directory.\n", path);
+            DIR *dir = opendir(src);
+            struct dirent *entry;
+
+            if (dir == NULL)
+            {
+                perror("opendir");
+                close(client);
+                exit(0);
+            }
+
+            while ((entry = readdir(dir)) != NULL)
+            {
+
+                if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+                {
+                    continue;
+                }
+                else
+                {
+                    data += "<a href='";
+                    if (strcmp(path, "/"))
+                    {
+                        data += path;
+                        data += "/";
+                    }
+
+                    data += entry->d_name;
+                    data += "'>";
+                    data += entry->d_name;
+                    data += "</a><br/>";
+                }
+            }
+            closedir(dir);
+        }
+        else
+        {
+            printf("%s is neither a regular file nor a directory.\n", path);
+        }
     }
+    else
+    {
+        perror("stat");
+        return NULL;
+    }
+
+    data += "</body></html>";
+    send(client, data.c_str(), data.size(), 0);
+
+    close(client);
+
     return NULL;
 }
